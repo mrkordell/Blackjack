@@ -24,13 +24,13 @@ var Chute = {
 	build: function(){
 		this.cards = [];
 		this.deck(6);
-		//this.logDeck("We've created the deck");
+		this.logDeck("We've created the deck");
 		this.shuffle();
-		//this.logDeck("We've shuffled the deck");
+		this.logDeck("We've shuffled the deck");
 		this.cut();
-		//this.logDeck("We've cut the deck");
+		this.logDeck("We've cut the deck");
 		this.removeCards(3);
-		//this.logDeck("We've removed three cards");
+		this.logDeck("We've removed three cards");
 	},
 
 	cut: function(){
@@ -40,7 +40,6 @@ var Chute = {
 		for(var i in cards){
 			this.cards.unshift(cards[i]);
 		}
-		//console.log(cut);
 	},
 
 	removeCards: function(x){
@@ -51,7 +50,7 @@ var Chute = {
 
 	logDeck: function(msg){
 		console.log(msg);
-		//console.log(this.cards);
+		console.log(this.cards);
 	},
 
 	deal: function(){
@@ -70,15 +69,11 @@ var Chute = {
 }
 
 var Blackjack = {
-	hit: function(){
-		return Chute.deal();
-	},
-
 	calculate: function(hand){
 		var total = 0;
 		for(i in hand){
 			var card = parseInt(hand[i].substring(1));
-			if(card > 10 && card < 14){
+			if(card >= 10 && card < 14){
 				total = total + 10;
 			} else if(card < 10){
 				total = total + card;
@@ -130,20 +125,29 @@ var Blackjack = {
 			player.resetHand();
 			dealer.resetHand();
 
+			//Bets
 			player.money--;
 
+			// Inital Deal
 			player.hit();
 			dealer.hit();
 			player.hit();
 			dealer.hit();
 
+			// If dealer is dealt blackjack, its over
 			if(Blackjack.blackjack(dealer.hand)){
-				//console.log('Blackjack!');
+				console.log('Blackjack!');
+				continue;
+			}
+			if(Blackjack.blackjack(Player.hand)){
+				console.log('Blackjack!');
+				player.money = player.money + 2.5;
 				continue;
 			}
 
-			dealer.play();
 			player.play();
+
+			dealer.play();
 
 			var winner = Blackjack.winner(player.total, dealer.total);
 
@@ -151,16 +155,12 @@ var Blackjack = {
 				player.money = player.money + 2;
 			}
 
-			//console.log('Money: ' + player.money);
-			//console.log('Hands: ' + hands);
+			console.log('Money: ' + player.money);
+			console.log('Hands: ' + hands);
 
 			Chute.reshuffle();
 			hands++;
-			console.log("Hand");
 		}
-
-		//console.log('END MONEY: ' + player.money);
-		//console.log('HANDS: ' + hands);
 
 		$('#hands').text(hands);
 		
@@ -184,13 +184,13 @@ function Player(money){
 		if(this.upCard == ''){
 			this.upCard = card;
 		}
-		//console.log('Hit: ' + this.hand);
+		console.log('Hit: ' + this.hand);
 		this.total = Blackjack.calculate(this.hand);
 	}
 
 	this.play = function(){
 		while(this.total < 17){
-			//console.log(this.total);
+			console.log('TOTAL: ' + this.total);
 			this.hit();
 		}
 	},
