@@ -37,6 +37,7 @@ var Chute = {
 		var size = this.cards.length;
 		var cut = Math.round(Math.random() * (size * .8) + (size * .2));
 		var cards = this.cards.slice(1, cut);
+		this.cards.splice(1, cut);
 		for(var i in cards){
 			this.cards.unshift(cards[i]);
 		}
@@ -69,6 +70,17 @@ var Chute = {
 }
 
 var Blackjack = {
+	cardValue: function(card){
+		var card = parseInt(card.substring(1));
+		if(card >= 10 && card < 14){
+			return 10;
+		} else if(card < 10){
+			return card;
+		} else {
+			return 11;
+		}
+	},
+
 	calculate: function(hand){
 		var total = 0;
 		for(i in hand){
@@ -115,64 +127,67 @@ var Blackjack = {
 		return 2;
 	},
 
-	simulate: function(){
-		var player = new Player(40);
-		var dealer = new Player(0);
-		Chute.build();
-		hands = 0;
-		// GAME LOOP
-		while(player.money > 0 && player.money < 42){
-			player.resetHand();
-			dealer.resetHand();
+	simulate: function(x){
+		for(i=0;i<x;i++){
+			var dealer = new Player(0, new DealerStrategy());
+			var player = new Player(40, new PlayerStrategy(dealer));
 
-			//Bets
-			player.money--;
+			Chute.build();
+			hands = 0;
+			// GAME LOOP
+			while(player.money > 0 && player.money < 42){
+				player.resetHand();
+				dealer.resetHand();
 
-			// Inital Deal
-			player.hit();
-			dealer.hit();
-			player.hit();
-			dealer.hit();
+				//Bets
+				player.money--;
 
-			// If dealer is dealt blackjack, its over
-			if(Blackjack.blackjack(dealer.hand)){
-				console.log('Blackjack!');
-				continue;
+				// Inital Deal
+				player.hit();
+				dealer.hit();
+				player.hit();
+				dealer.hit();
+
+				// If dealer is dealt blackjack, its over
+				if(Blackjack.blackjack(dealer.hand)){
+					console.log('Dealer Blackjack!');
+					continue;
+				}
+				if(Blackjack.blackjack(player.hand)){
+					console.log('Player Blackjack!');
+					player.money = player.money + 2.5;
+					continue;
+				}
+
+				player.play();
+
+				dealer.play();
+
+				var winner = Blackjack.winner(player.total, dealer.total);
+
+				if(winner == 1){
+					player.money = player.money + 2;
+				}
+
+				console.log('Money: ' + player.money);
+				console.log('Hands: ' + hands);
+
+				Chute.reshuffle();
+				hands++;
 			}
-			if(Blackjack.blackjack(Player.hand)){
-				console.log('Blackjack!');
-				player.money = player.money + 2.5;
-				continue;
+
+			$('#hands').text(hands);
+			
+			if(player.money){
+				$('#wins').text((parseInt($('#wins').text())+1));
+			} else {
+				$('#losses').text((parseInt($('#losses').text())+1));
 			}
-
-			player.play();
-
-			dealer.play();
-
-			var winner = Blackjack.winner(player.total, dealer.total);
-
-			if(winner == 1){
-				player.money = player.money + 2;
-			}
-
-			console.log('Money: ' + player.money);
-			console.log('Hands: ' + hands);
-
-			Chute.reshuffle();
-			hands++;
-		}
-
-		$('#hands').text(hands);
-		
-		if(player.money){
-			$('#wins').text((parseInt($('#wins').text())+1));
-		} else {
-			$('#losses').text((parseInt($('#losses').text())+1));
 		}
 	}
 }
 
-function Player(money){
+function Player(money, strategy){
 	this.hand = [];
 	this.total = 0;
 	this.money = money;
@@ -189,15 +204,42 @@ function Player(money){
 	}
 
 	this.play = function(){
-		while(this.total < 17){
-			console.log('TOTAL: ' + this.total);
-			this.hit();
-		}
-	},
+		strategy.play();
+	}
 
 	this.resetHand = function(){
 		this.hand = [];
 		this.total = 0;
 		this.upCard = '';
+	}
+}
+
+function PlayerStrategy(dealer){
+	this.dealer = dealer;
+
+	this.play = function(){
+		var card = Blackjack.cardValue(this.dealer.upCard);
+		var val = this.dealerValue(card);
+		console.log('Dealer Value Is: ' + val);
+		while(this.total < val){
+			this.hit();
+		}
+	}
+
+	this.dealerValue = function(card){
+		if(card < 11 && card > 5){
+			return card + 10;
+		} else {
+			return 17;
+		}
+	}
+}
+
+function DealerStrategy(){
+	this.play = function(){
+		while(this.total < 17){
+			console.log('TOTAL: ' + this.total);
+			this.hit();
+		}
 	}
 }
